@@ -1,0 +1,1 @@
+Creates congressional district from voter information. Computerized system groups people by location which prevents gerrymandering from human interaction. 
