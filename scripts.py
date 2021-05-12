@@ -7,9 +7,6 @@ from geopy.geocoders import GoogleV3
 api_file = open('API', 'r')
 geolocator = GoogleV3(api_key=api_file.readline())
 
-SAVE = False
-LOAD = False
-
 def add_lat_lon(voter):
     address = voter["residence_street_number"] + " "
     if voter["pre_direction"]:
@@ -48,6 +45,9 @@ def lst_format(line):
     return voter
 
 def main():
+    SAVE = False
+    LOAD = False
+
     if len(sys.argv) > 2: 
         print("Error: Too many arguments")
 
@@ -57,33 +57,38 @@ def main():
     if len(sys.argv) == 2 and sys.argv[1] == "--load": 
         LOAD = True
 
-    if not os.path.isfile("./entire_state_v.lst"):
-        os.system("wget http://69.64.83.144/~mi/download/20170512/FOIA_Voters.zip")
-        os.system("unzip FOIA_Voters.zip")
-
-    # Choose random subset of data
-    in_file = "entire_state_v.lst"
-    voter_lst = open(in_file, 'r')
-    data = voter_lst.readlines()
-    voter_lst.close()
-    subset = choice(data, 20000, replace=False)
-
     processed_subset = []
-    processed_subset_json = None
-    
-    if SAVE:
-        out_file = "processed_subset.json"
-        processed_subset_json = open(out_file, 'w+')
 
-    for line in subset:
-        voter = lst_format(line)
-        add_lat_lon(voter)
-        processed_subset.append(voter)
+    if not LOAD:
+
+        if not os.path.isfile("./entire_state_v.lst"):
+            os.system("wget http://69.64.83.144/~mi/download/20170512/FOIA_Voters.zip")
+            os.system("unzip FOIA_Voters.zip")
+
+        # Choose random subset of data
+        in_file = "entire_state_v.lst"
+        voter_lst = open(in_file, 'r')
+        data = voter_lst.readlines()
+        voter_lst.close()
+        subset = choice(data, 20000, replace=False)
+
+        processed_subset_json = None
+        
+        if SAVE:
+            processed_subset_json = open("processed_subset.json", 'w+')
+
+        for line in subset:
+            voter = lst_format(line)
+            add_lat_lon(voter)
+            processed_subset.append(voter)
 
         if SAVE:
-            processed_subset_json.write(json.dumps(voter))
-
-    if SAVE:
+            processed_subset_json.write(json.dumps(processed_subset))
+            processed_subset_json.close()
+        
+    else:
+        processed_subset_json = open("processed_subset.json",)
+        processed_subset = json.load(processed_subset_json)
         processed_subset_json.close()
 
     # TODO: convert into lat, lon pairs and use spectral clustering
