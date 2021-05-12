@@ -1,22 +1,30 @@
 import json
-from geopy.geocoders import Nominatim
+import os
+import sys
+from numpy.random import choice
+from geopy.geocoders import GoogleV3
 
-def address_to_coordinate():
-    geolocator = Nominatim(user_agent="sample app")
-    data = geolocator.geocode("1680 CHATHAM DR, TROY, MI 48084")
-    print(data.point.latitude, data.point.longitude)
+api_file = open('API', 'r')
+geolocator = GoogleV3(api_key=api_file.readline())
 
-def lst_to_json():
-    # Set input and output locations
-    in_file = "code48084.lst"
-    out_file = "code48084.json"
-    voter_lst = open(in_file, 'r')
-    voter_json = open(out_file, 'w+')
+SAVE = False
+LOAD = False
 
-    # Iterate over every line of input
-    for line in voter_lst:
+def add_lat_lon(voter):
+    address = voter["residence_street_number"] + " "
+    if voter["pre_direction"]:
+        address += voter["pre_direction"] + " "
+    address += voter["street_name"] + " " + voter["street_type"] + ", "
+    address += voter["city"] + ", " + voter["state"] + " " + voter["zip"] + ", USA"
 
-        voter = {
+    # location = geolocator.geocode(address)
+
+    voter["complete_address"] = address
+    # voter["latitude"] = location.latitude
+    # voter["longitude"] = location.longitude
+
+def lst_format(line):
+    voter = {
             "first_name": line[35:55].strip(),
             "middle_name": line[55:75].strip(),
             "last_name": line[0:35].strip(),
@@ -33,16 +41,53 @@ def lst_to_json():
             "state_house": line[479:484].strip(),
             "state_senate": line[484:489].strip(),
             "us_congress": line[489:494].strip(),
+            "complete_address": None,
+            "latitude": None,
+            "longitude": None,
         }
-
-        voter_json.write(json.dumps(voter))
-
-    voter_lst.close()
-    voter_json.close()
+    return voter
 
 def main():
-    lst_to_json()
-    #address_to_coordinate()
+    if len(sys.argv) > 2: 
+        print("Error: Too many arguments")
+
+    if len(sys.argv) == 2 and sys.argv[1] == "--save": 
+        SAVE = True
+
+    if len(sys.argv) == 2 and sys.argv[1] == "--load": 
+        LOAD = True
+
+    if not os.path.isfile("./entire_state_v.lst"):
+        os.system("wget http://69.64.83.144/~mi/download/20170512/FOIA_Voters.zip")
+        os.system("unzip FOIA_Voters.zip")
+
+    # Choose random subset of data
+    in_file = "entire_state_v.lst"
+    voter_lst = open(in_file, 'r')
+    data = voter_lst.readlines()
+    voter_lst.close()
+    subset = choice(data, 20000, replace=False)
+
+    processed_subset = []
+    processed_subset_json = None
+    
+    if SAVE:
+        out_file = "processed_subset.json"
+        processed_subset_json = open(out_file, 'w+')
+
+    for line in subset:
+        voter = lst_format(line)
+        add_lat_lon(voter)
+        processed_subset.append(voter)
+
+        if SAVE:
+            processed_subset_json.write(json.dumps(voter))
+
+    if SAVE:
+        processed_subset_json.close()
+
+    # TODO: convert into lat, lon pairs and use spectral clustering
+    # TODO: allow for loading from old json data
 
 if __name__ == "__main__":
     main()
