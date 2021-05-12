@@ -1,8 +1,10 @@
 import json
 import os
 import sys
+import numpy as np
 from numpy.random import choice
 from geopy.geocoders import GoogleV3
+from sklearn.cluster import SpectralClustering
 
 api_file = open('API', 'r')
 geolocator = GoogleV3(api_key=api_file.readline())
@@ -38,6 +40,7 @@ def lst_format(line):
             "state_house": line[479:484].strip(),
             "state_senate": line[484:489].strip(),
             "us_congress": line[489:494].strip(),
+            "cluster": None,
             "complete_address": None,
             "latitude": None,
             "longitude": None,
@@ -47,6 +50,8 @@ def lst_format(line):
 def main():
     SAVE = False
     LOAD = False
+    SAMPLE_SIZE = 25
+    CLUSTERS = 3
 
     if len(sys.argv) > 2: 
         print("Error: Too many arguments")
@@ -70,7 +75,7 @@ def main():
         voter_lst = open(in_file, 'r')
         data = voter_lst.readlines()
         voter_lst.close()
-        subset = choice(data, 20000, replace=False)
+        subset = choice(data, SAMPLE_SIZE, replace=False)
 
         processed_subset_json = None
         
@@ -92,7 +97,12 @@ def main():
         processed_subset_json.close()
 
     # TODO: convert into lat, lon pairs and use spectral clustering
-    # TODO: allow for loading from old json data
+    format_lat_lon = np.array([[voter["latitude"], voter["longitude"]] for voter in processed_subset])
+    clustering = SpectralClustering(n_clusters=CLUSTERS).fit(format_lat_lon)
+    print(clustering.labels_)
+
+    for i in range(SAMPLE_SIZE):
+        processed_subset[i]["cluster"] = clustering.labels_[i]
 
 if __name__ == "__main__":
     main()
