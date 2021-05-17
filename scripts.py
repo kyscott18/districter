@@ -56,8 +56,8 @@ def lst_format(line):
 def main():
     SAVE = False
     LOAD = False
-    SAMPLE_SIZE = 25
-    CLUSTERS = 3
+    SAMPLE_SIZE = 25000
+    CLUSTERS = 14
 
     if len(sys.argv) > 2: 
         print("Error: Too many arguments")
