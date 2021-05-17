@@ -71,12 +71,15 @@ def main():
     processed_subset = []
 
     if not LOAD:
-
         if not os.path.isfile("./entire_state_v.lst"):
+            print("Downloading voter data...")
             os.system("wget http://69.64.83.144/~mi/download/20170512/FOIA_Voters.zip")
             os.system("unzip FOIA_Voters.zip")
+        else:
+            print("Using existing voter data...")
 
         # Choose random subset of data
+        print("Selecting random subset of voters...")
         in_file = "entire_state_v.lst"
         voter_lst = open(in_file, 'r')
         data = voter_lst.readlines()
@@ -94,24 +97,29 @@ def main():
             processed_subset.append(voter)
 
         if SAVE:
+            print("Saving processed subset...")
             processed_subset_json.write(json.dumps(processed_subset))
             processed_subset_json.close()
         
     else:
+        print("Loading processed subset...")
         processed_subset_json = open("processed_subset.json",)
         processed_subset = json.load(processed_subset_json)
         processed_subset_json.close()
 
+    print("Clustering processed subset...")
     format_lat_lon = np.array([[voter["latitude"], voter["longitude"]] for voter in processed_subset])
     clustering = SpectralClustering(n_clusters=CLUSTERS).fit(format_lat_lon)
 
     for i in range(SAMPLE_SIZE):
         processed_subset[i]["cluster"] = int(clustering.labels_[i])
 
+    print("Writing out results...")
     output_json = open("output.json", 'w+')
     output_json.write(json.dumps(processed_subset))
     output_json.close()
     
+    print("Visualizing results...")
     df = pd.DataFrame(processed_subset)
     crs = {'init': 'epsg:4326'}
     geometry = [Point(xy) for xy in zip(df['longitude'], df['latitude'])]
@@ -123,7 +131,8 @@ def main():
         geo_df[geo_df['cluster'] == i].plot(ax=ax, markersize=20, color=colors[i%len(colors)], marker='o')
 
     fig = out.get_figure()  
-    fig.savefig("map.png")  
+    fig.savefig("map.png") 
+    print("Done") 
 
 if __name__ == "__main__":
     main()
