@@ -1,7 +1,12 @@
 import json
 import os
 import sys
+import descartes
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import geopandas as gpd
+from shapely.geometry import Point, Polygon
 from numpy.random import choice
 from geopy.geocoders import GoogleV3
 from sklearn.cluster import SpectralClustering
@@ -96,13 +101,30 @@ def main():
         processed_subset = json.load(processed_subset_json)
         processed_subset_json.close()
 
-    # TODO: convert into lat, lon pairs and use spectral clustering
     format_lat_lon = np.array([[voter["latitude"], voter["longitude"]] for voter in processed_subset])
     clustering = SpectralClustering(n_clusters=CLUSTERS).fit(format_lat_lon)
-    print(clustering.labels_)
 
     for i in range(SAMPLE_SIZE):
-        processed_subset[i]["cluster"] = clustering.labels_[i]
+        processed_subset[i]["cluster"] = int(clustering.labels_[i])
+
+    output_json = open("output.json", 'w+')
+    output_json.write(json.dumps(processed_subset))
+    output_json.close()
+    
+    # TODO: plot the data
+    df = pd.DataFrame(processed_subset)
+    crs = {'init': 'epsg:4326'}
+    geometry = [Point(xy) for xy in zip(df['longitude'], df['latitude'])]
+    geo_df = gpd.GeoDataFrame(df, crs=crs, geometry=geometry)
+    street_map = gpd.read_file('./michigan_administrative/michigan_administrative.shp')
+    fig, ax = plt.subplots(figsize = (15, 15))
+    out = street_map.plot(ax = ax, alpha=0.4, color='grey')
+    geo_df[geo_df['cluster'] == 0].plot(ax=ax, markersize=20, color='blue', marker='o')
+    geo_df[geo_df['cluster'] == 1].plot(ax=ax, markersize=20, color='red', marker='o')
+    geo_df[geo_df['cluster'] == 2].plot(ax=ax, markersize=20, color='green', marker='o')
+
+    fig = out.get_figure()  
+    fig.savefig("map.png")  
 
 if __name__ == "__main__":
     main()

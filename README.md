@@ -1,2 +1,2 @@
 Creates congressional district from voter information. Computerized system groups people by location which prevents gerrymandering from human interaction. 
-Pulls data from source, selects a random sample, performs districting based on spectral clustering, computes statistics and visualizes results
+Pulls data from source, selects a random sample, performs districting based on spectral clustering, saves output in a json and visualizes results
