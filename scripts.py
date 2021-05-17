@@ -13,6 +13,7 @@ from sklearn.cluster import SpectralClustering
 
 api_file = open('API', 'r')
 geolocator = GoogleV3(api_key=api_file.readline())
+colors = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'cyan', 'black', 'brown', 'olive']
 
 def add_lat_lon(voter):
     address = voter["residence_street_number"] + " "
@@ -21,11 +22,11 @@ def add_lat_lon(voter):
     address += voter["street_name"] + " " + voter["street_type"] + ", "
     address += voter["city"] + ", " + voter["state"] + " " + voter["zip"] + ", USA"
 
-    # location = geolocator.geocode(address)
+    location = geolocator.geocode(address)
 
     voter["complete_address"] = address
-    # voter["latitude"] = location.latitude
-    # voter["longitude"] = location.longitude
+    voter["latitude"] = location.latitude
+    voter["longitude"] = location.longitude
 
 def lst_format(line):
     voter = {
@@ -111,7 +112,6 @@ def main():
     output_json.write(json.dumps(processed_subset))
     output_json.close()
     
-    # TODO: plot the data
     df = pd.DataFrame(processed_subset)
     crs = {'init': 'epsg:4326'}
     geometry = [Point(xy) for xy in zip(df['longitude'], df['latitude'])]
@@ -119,9 +119,8 @@ def main():
     street_map = gpd.read_file('./michigan_administrative/michigan_administrative.shp')
     fig, ax = plt.subplots(figsize = (15, 15))
     out = street_map.plot(ax = ax, alpha=0.4, color='grey')
-    geo_df[geo_df['cluster'] == 0].plot(ax=ax, markersize=20, color='blue', marker='o')
-    geo_df[geo_df['cluster'] == 1].plot(ax=ax, markersize=20, color='red', marker='o')
-    geo_df[geo_df['cluster'] == 2].plot(ax=ax, markersize=20, color='green', marker='o')
+    for i in range(CLUSTERS):
+        geo_df[geo_df['cluster'] == i].plot(ax=ax, markersize=20, color=colors[i%len(colors)], marker='o')
 
     fig = out.get_figure()  
     fig.savefig("map.png")  
