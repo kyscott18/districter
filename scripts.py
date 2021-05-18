@@ -16,6 +16,8 @@ geolocator = GoogleV3(api_key=api_file.readline())
 colors = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'cyan', 'black', 'brown', 'olive']
 
 def add_lat_lon(voter):
+    # TODO: 3000 requests per minute
+    # TODO: Handle errors returned by google api
     address = voter["residence_street_number"] + " "
     if voter["pre_direction"]:
         address += voter["pre_direction"] + " "
@@ -91,6 +93,7 @@ def main():
         if SAVE:
             processed_subset_json = open("processed_subset.json", 'w+')
 
+        print("Adding Google geocoding information...")
         for line in subset:
             voter = lst_format(line)
             add_lat_lon(voter)
