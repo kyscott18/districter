@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 import descartes
 import numpy as np
 import pandas as pd
@@ -16,7 +17,6 @@ geolocator = GoogleV3(api_key=api_file.readline())
 colors = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'cyan', 'black', 'brown', 'olive']
 
 def add_lat_lon(voter):
-    # TODO: 3000 requests per minute
     # TODO: Handle errors returned by google api
     address = voter["residence_street_number"] + " "
     if voter["pre_direction"]:
@@ -26,9 +26,13 @@ def add_lat_lon(voter):
 
     location = geolocator.geocode(address)
 
+    if location == None:
+        return False
+
     voter["complete_address"] = address
     voter["latitude"] = location.latitude
     voter["longitude"] = location.longitude
+    return True
 
 def lst_format(line):
     voter = {
@@ -96,8 +100,9 @@ def main():
         print("Adding Google geocoding information...")
         for line in subset:
             voter = lst_format(line)
-            add_lat_lon(voter)
-            processed_subset.append(voter)
+            if add_lat_lon(voter):
+                processed_subset.append(voter)
+            time.sleep(1/3000)
 
         if SAVE:
             print("Saving processed subset...")
