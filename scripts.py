@@ -24,14 +24,14 @@ def add_lat_lon(voter):
     address += voter["street_name"] + " " + voter["street_type"] + ", "
     address += voter["city"] + ", " + voter["state"] + " " + voter["zip"] + ", USA"
 
-    location = geolocator.geocode(address)
+    #location = geolocator.geocode(address)
 
-    if location == None:
-        return False
+    # if location == None:
+    #     return False
 
     voter["complete_address"] = address
-    voter["latitude"] = location.latitude
-    voter["longitude"] = location.longitude
+    # voter["latitude"] = location.latitude
+    # voter["longitude"] = location.longitude
     return True
 
 def lst_format(line):
@@ -117,10 +117,10 @@ def main():
 
     print("Clustering processed subset...")
     format_lat_lon = np.array([[voter["latitude"], voter["longitude"]] for voter in processed_subset])
-    clustering = SpectralClustering(n_clusters=CLUSTERS).fit(format_lat_lon)
+    clustering = SpectralClustering(n_clusters=CLUSTERS, affinity='nearest_neighbors').fit(format_lat_lon)
 
-    for i in range(SAMPLE_SIZE):
-        processed_subset[i]["cluster"] = int(clustering.labels_[i])
+    for i, ele in enumerate(processed_subset):
+        ele["cluster"] = int(clustering.labels_[i])
 
     print("Writing out results...")
     output_json = open("output.json", 'w+')
