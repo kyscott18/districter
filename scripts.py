@@ -16,24 +16,34 @@ api_file = open('API', 'r')
 geolocator = GoogleV3(api_key=api_file.readline())
 colors = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'cyan', 'black', 'brown', 'olive']
 
+# Uses the google api to add latitude and longitude to voter
 def add_lat_lon(voter):
-    # TODO: Handle errors returned by google api
     address = voter["residence_street_number"] + " "
     if voter["pre_direction"]:
         address += voter["pre_direction"] + " "
     address += voter["street_name"] + " " + voter["street_type"] + ", "
     address += voter["city"] + ", " + voter["state"] + " " + voter["zip"] + ", USA"
 
-    #location = geolocator.geocode(address)
+    location = geolocator.geocode(address)
 
-    # if location == None:
-    #     return False
-
+    if location == None:
+        return False
+    
     voter["complete_address"] = address
-    # voter["latitude"] = location.latitude
-    # voter["longitude"] = location.longitude
+    voter["latitude"] = location.latitude
+    voter["longitude"] = location.longitude
+
+    return check_for_google_errors(voter)
+
+# Checks to make sure latitude and longitude returned are generally in the correct area
+def check_for_google_errors(voter):
+    if voter["latitude"] > 48.5 or voter["latitude"] < 41.5:
+        return False
+    if voter["longitude"] > -82 or voter["longitude"] < -91:
+        return False
     return True
 
+# Formats the information pulled from the State of Michigan
 def lst_format(line):
     voter = {
             "first_name": line[35:55].strip(),
@@ -84,7 +94,6 @@ def main():
         else:
             print("Using existing voter data...")
 
-        # Choose random subset of data
         print("Selecting random subset of voters...")
         in_file = "entire_state_v.lst"
         voter_lst = open(in_file, 'r')
@@ -112,7 +121,7 @@ def main():
     else:
         print("Loading processed subset...")
         processed_subset_json = open("processed_subset.json",)
-        processed_subset = json.load(processed_subset_json)
+        processed_subset = [voter for voter in json.load(processed_subset_json) if check_for_google_errors(voter)]
         processed_subset_json.close()
 
     print("Clustering processed subset...")
