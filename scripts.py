@@ -111,8 +111,8 @@ def main():
     format_lat_lon = np.array([[voter["latitude"], voter["longitude"]] for voter in processed_subset])
     clustering = SpectralClustering(n_clusters=CLUSTERS).fit(format_lat_lon)
 
-    for i in range(SAMPLE_SIZE):
-        processed_subset[i]["cluster"] = int(clustering.labels_[i])
+    for i, ele in enumerate(processed_subset):
+        ele["cluster"] = int(clustering.labels_[i])
 
     print("Writing out results...")
     output_json = open("output.json", 'w+')
